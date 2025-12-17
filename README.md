@@ -1,8 +1,8 @@
 # 🎥 Sistema de Vigilancia "Anti-Nervios" con Control de Privacidad
 
 ## 📖 Historia y Contexto
-
-Este proyecto nació de una necesidad muy específica: **poder estar con mi novia en mi cuarto con la puerta cerrada, sin que mi mamá se preocupara.**
+la quité, me dió pena
+<!-- Este proyecto nació de una necesidad muy específica: **poder estar con mi novia en mi cuarto con la puerta cerrada, sin que mi mamá se preocupara.**
 
 Mi mamá insistía en que la puerta debía estar abierta. Yo le propuse una solución moderna: poner una cámara en mi cuarto que ella pudiera ver desde su celular para "vigilarnos". Ella aceptó.
 
@@ -11,7 +11,7 @@ Lo que ella no sabe es que esa cámara es parte de este sistema inteligente. Mie
 1. **Saber si alguien se acerca**: Tengo otras cámaras (celulares viejos) en el pasillo y entrada que detectan personas automáticamente y me avisan vía pitidos.
 2. **Controlar lo que ella ve**: Si necesito privacidad absoluta, puedo "sabotear" su transmisión con un solo clic (congelar la imagen, pixelarla o simular que el video carga o hasta expulsarla de su sesión), dándome el tiempo y la tranquilidad que necesito sin levantar sospechas.
 
-El objetivo final no es solo la vigilancia, sino **eliminar los nervios** de que alguien entre de sorpresa.
+El objetivo final no es solo la vigilancia, sino **eliminar los nervios** de que alguien entre de sorpresa. -->
 
 ## ⚙️ ¿Cómo Funciona?
 
