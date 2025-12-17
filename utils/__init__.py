@@ -1,0 +1,1 @@
+# Utils package for FastAPI surveillance system

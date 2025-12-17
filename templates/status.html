@@ -1,0 +1,44 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Estado del Sistema{% endblock %}
+
+{% block content %}
+<section style="max-width: 980px; margin: 40px auto; background: #fff; border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); padding: 24px;">
+    <h1 style="margin-top:0">Estado del Sistema</h1>
+    {% if system_status %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px;">
+        <div style="border:1px solid #eee; border-radius:8px; padding:12px;">
+            <h3>Cámaras</h3>
+            <p>Total: {{ system_status.cameras.total_cameras }}</p>
+            <p>Activas: {{ system_status.cameras.active_cameras }}</p>
+            <p>Con detección: {{ system_status.cameras.cameras_with_detection }}</p>
+        </div>
+        <div style="border:1px solid #eee; border-radius:8px; padding:12px;">
+            <h3>WebSockets</h3>
+            <p>Conexiones: {{ system_status.websockets.total_connections }}</p>
+            <p>Admins: {{ system_status.websockets.admin_connections }}</p>
+            <p>Mamás: {{ system_status.websockets.mama_connections }}</p>
+        </div>
+        <div style="border:1px solid #eee; border-radius:8px; padding:12px;">
+            <h3>Sesiones</h3>
+            <p>Total: {{ system_status.sessions.total_sessions }}</p>
+            <p>Admins: {{ system_status.sessions.admin_sessions }}</p>
+            <p>Mamás: {{ system_status.sessions.mama_sessions }}</p>
+        </div>
+        <div style="border:1px solid #eee; border-radius:8px; padding:12px;">
+            <h3>Audio</h3>
+            {% for k, v in system_status.audio.items() %}
+            <p>{{ k | replace('_',' ') | title }}: {{ v }}</p>
+            {% endfor %}
+        </div>
+        <div style="border:1px solid #eee; border-radius:8px; padding:12px;">
+            <h3>Sabotaje</h3>
+            <p>Habilitado: {{ system_status.sabotage.enabled }}</p>
+            <p>Modo: {{ system_status.sabotage.current_mode }}</p>
+        </div>
+    </div>
+    {% else %}
+    <p>No hay datos de estado disponibles.</p>
+    {% endif %}
+</section>
+{% endblock %}

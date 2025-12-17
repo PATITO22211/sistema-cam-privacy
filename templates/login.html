@@ -1,0 +1,48 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Iniciar Sesión - Vigilancia{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Estilos básicos para el login */
+    .page-wrap { display: flex; justify-content: center; align-items: center; }
+    .login-container { background-color: #fff; padding: 30px 40px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; }
+    h1 { color: #333; margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; text-align: left; }
+    label { display: block; margin-bottom: 5px; color: #555; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background-color 0.3s ease; }
+    button:hover { background-color: #0056b3; }
+    .flash-messages { list-style: none; padding: 0; margin-top: 15px; }
+    .flash-messages li { padding: 10px; margin-bottom: 10px; border-radius: 4px; }
+    .flash-messages .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .flash-messages .danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .flash-messages .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    .flash-messages .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h1>Acceso al Sistema</h1>
+
+    <!-- Mostrar mensajes de error -->
+    {% if error %}
+        <ul class="flash-messages">
+            <li class="danger">{{ error }}</li>
+        </ul>
+    {% endif %}
+
+    <form method="POST" action="/login">
+        <div class="form-group">
+            <label for="username">Usuario:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">Iniciar Sesión</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket</title>
+</head>
+<body>
+    <h1>Test WebSocket Connection</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+
+    <script>
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        
+        function log(message) {
+            console.log(message);
+            messagesDiv.innerHTML += '<p>' + message + '</p>';
+        }
+        
+        log('🔌 Intentando conectar a WebSocket simplificado...');
+        
+        const ws = new WebSocket('ws://localhost:8000/ws');
+        
+        ws.onopen = function() {
+            statusDiv.textContent = '✅ Conectado';
+            log('✅ WebSocket conectado exitosamente!');
+        };
+        
+        ws.onmessage = function(event) {
+            log('📨 Mensaje recibido: ' + event.data);
+        };
+        
+        ws.onerror = function(error) {
+            statusDiv.textContent = '❌ Error';
+            log('❌ Error WebSocket: ' + error);
+        };
+        
+        ws.onclose = function(event) {
+            statusDiv.textContent = '🔌 Desconectado';
+            log('🔌 WebSocket cerrado. Código: ' + event.code + ', Razón: ' + event.reason);
+        };
+    </script>
+</body>
+</html>

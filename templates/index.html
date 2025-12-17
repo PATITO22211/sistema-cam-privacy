@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sistema de Vigilancia - {{ rol.capitalize() }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- Variables CSS Modernas --- */
+        :root {
+            --color-fondo-principal: #0a0e1a;
+            --color-fondo-secundario: #1a1f2e;
+            --color-fondo-terciario: #252b3a;
+            --color-borde-camara: #3a4553;
+            --color-sombra-camara: rgba(0, 0, 0, 0.4);
+            --color-texto-principal: #ffffff;
+            --color-texto-secundario: #b8c5d1;
+            --color-texto-estado: #8fa3b3;
+            --color-estado-fondo: rgba(16, 21, 32, 0.95);
+            --color-titulo-resaltado: #00d4ff;
+            --color-alerta-texto: #ffffff;
+            --color-boton-activo: #00c851;
+            --color-boton-activo-hover: #00a041;
+            --color-boton-auto-activo: #ffbb33;
+            --color-boton-auto-activo-hover: #ff8800;
+            --color-boton-ralentizar-activo: #ff6b35;
+            --color-boton-ralentizar-activo-hover: #e55100;
+            --color-boton-normal: #2196f3;
+            --color-boton-hover: #1976d2;
+            --color-boton-mama: #9c27b0;
+            --color-boton-mama-hover: #7b1fa2;
+            --color-audio-ok: #4caf50;
+            --color-audio-blocked: #ff9800;
+            --color-audio-error: #f44336;
+            --color-preemptive-fondo: #f44336;
+            --color-status-detected: rgba(244, 67, 54, 0.95);
+            --color-status-mama-online: #26a69a;
+            --color-status-mama-offline: #78909c;
+            --color-camera-enabled: #4caf50;
+            --color-camera-disabled: #f44336;
+            --color-fondo-mama-online: #ff0000; /* Morado fuerte */
+            --color-fondo-mama-offline: var(--color-fondo-principal);
+            
+            /* Variables de diseño */
+            --border-radius: 12px;
+            --border-radius-small: 8px;
+            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.2);
+            --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.3);
+            --transition-fast: 0.2s ease;
+            --transition-medium: 0.3s ease;
+            --transition-slow: 0.5s ease;
+        }
+
+        /* Reset y estilos base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--color-fondo-principal) 0%, var(--color-fondo-secundario) 100%);
+            color: var(--color-texto-principal);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        body.admin-status-mama-online {
+            background: linear-gradient(135deg, var(--color-fondo-mama-online) 0%, var(--color-fondo-secundario) 100%);
+        }
+
+        /* Header moderno */
+        .header {
+            background: rgba(26, 31, 46, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid var(--color-borde-camara);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--color-titulo-resaltado);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            font-size: 0.9rem;
+            color: var(--color-texto-secundario);
+        }
+
+        .user-role {
+            background: var(--color-titulo-resaltado);
+            color: var(--color-fondo-principal);
+            padding: 6px 12px;
+            border-radius: var(--border-radius-small);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        #audio-status {
+            padding: 4px 8px;
+            border-radius: var(--border-radius-small);
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        #audio-status.ok {
+            background: var(--color-audio-ok);
+            color: white;
+        }
+
+        #audio-status.blocked {
+            background: var(--color-audio-blocked);
+            color: white;
+        }
+
+        #audio-status.error {
+            background: var(--color-audio-error);
+            color: white;
+        }
+
+        /* Container principal */
+        .container {
+            display: flex;
+            min-height: calc(100vh - 80px);
+        }
+
+        /* Área de video mejorada */
+        #video-container {
+            flex: 1;
+            padding: 24px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            align-content: start;
+            overflow-y: auto;
+        }
+
+        /* Cámaras con diseño moderno */
+        .camera-feed {
+            background: var(--color-fondo-terciario);
+            border: 2px solid var(--color-borde-camara);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-medium);
+            transition: all var(--transition-medium);
+            position: relative;
+            aspect-ratio: 16/9;
+        }
+
+        /* Agrandar cámaras admin: ocupar dos columnas del grid */
+        .camera-feed.large {
+            grid-column: span 2;
+        }
+
+        .camera-feed:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-heavy);
+            border-color: var(--color-titulo-resaltado);
+        }
+
+        .camera-feed canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            transition: filter var(--transition-medium);
+        }
+
+        .camera-feed img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            transition: filter var(--transition-medium);
+        }
+
+        .camera-feed canvas.blurred {
+            filter: blur(8px);
+        }
+
+        .status {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: var(--color-estado-fondo);
+            padding: 8px 16px;
+            border-radius: var(--border-radius-small);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--color-texto-estado);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+        }
+
+        .status.detected {
+            background: var(--color-status-detected);
+            color: var(--color-alerta-texto);
+            font-weight: 600;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Panel de administración mejorado */
+        .admin-controls {
+            width: 400px;
+            background: var(--color-fondo-secundario);
+            border-left: 2px solid var(--color-borde-camara);
+            padding: 24px;
+            overflow-y: auto;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .admin-controls h3 {
+            color: var(--color-titulo-resaltado);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: center;
+            border-bottom: 2px solid var(--color-borde-camara);
+            padding-bottom: 12px;
+        }
+
+        .admin-controls h4 {
+            color: var(--color-texto-principal);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 24px 0 16px 0;
+            border-bottom: 1px solid var(--color-borde-camara);
+            padding-bottom: 8px;
+        }
+
+        /* Controles de sabotaje */
+        .control-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .control-buttons button {
+            padding: 12px 16px;
+            border: none;
+            border-radius: var(--border-radius-small);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: var(--color-boton-normal);
+            color: white;
+        }
+
+        .control-buttons button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        .control-buttons button.active {
+            background: var(--color-boton-activo);
+        }
+
+        .control-buttons button#btn-auto.active {
+            background: var(--color-boton-auto-activo);
+            color: #333;
+        }
+
+        .control-buttons button#btn-ralentizar.active {
+            background: var(--color-boton-ralentizar-activo);
+        }
+
+        /* Status containers */
+        #sabotage-status-container {
+            background: var(--color-fondo-terciario);
+            border-radius: var(--border-radius-small);
+            padding: 16px;
+            margin: 16px 0;
+            border: 1px solid var(--color-borde-camara);
+        }
+
+        #control-status {
+            color: var(--color-texto-principal);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        #preemptive-status {
+            color: var(--color-preemptive-fondo);
+            font-weight: 700;
+            display: none;
+            margin-top: 8px;
+        }
+
+        /* Controles de mamá */
+        .mama-controls {
+            background: var(--color-fondo-terciario);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin-top: 24px;
+            border: 1px solid var(--color-borde-camara);
+        }
+
+        .mama-status {
+            font-size: 0.9rem;
+            margin-bottom: 16px;
+            color: var(--color-texto-secundario);
+            line-height: 1.5;
+        }
+
+        .mama-status strong {
+            color: var(--color-texto-principal);
+        }
+
+        .mama-status .status-online {
+            color: var(--color-status-mama-online);
+            font-weight: 600;
+        }
+
+        .mama-status .status-offline {
+            color: var(--color-status-mama-offline);
+        }
+
+        .mama-status .camera-enabled {
+            color: var(--color-camera-enabled);
+            font-weight: 600;
+        }
+
+        .mama-status .camera-disabled {
+            color: var(--color-camera-disabled);
+            font-weight: 600;
+        }
+
+        .mama-controls .control-buttons button {
+            background: var(--color-boton-mama);
+            grid-column: span 2;
+        }
+
+        .mama-controls .control-buttons button:hover {
+            background: var(--color-boton-mama-hover);
+        }
+
+        /* Gestión de cámaras */
+        .camera-management {
+            margin-top: 24px;
+            display: grid;
+            gap: 20px;
+        }
+
+        .camera-list-section,
+        .add-camera-section {
+            background: var(--color-fondo-terciario);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            border: 1px solid var(--color-borde-camara);
+        }
+
+        .camera-list-section h5,
+        .add-camera-section h5 {
+            color: var(--color-titulo-resaltado);
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .camera-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 16px;
+        }
+
+        .camera-item {
+            background: var(--color-fondo-principal);
+            border: 1px solid var(--color-borde-camara);
+            border-radius: var(--border-radius-small);
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all var(--transition-fast);
+        }
+
+        .camera-item:hover {
+            border-color: var(--color-titulo-resaltado);
+            transform: translateX(4px);
+        }
+
+        .camera-name {
+            font-weight: 600;
+            color: var(--color-texto-principal);
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+
+        .camera-details {
+            font-size: 0.8rem;
+            color: var(--color-texto-secundario);
+            margin-bottom: 12px;
+        }
+
+        .camera-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: var(--border-radius-small);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .camera-status.running {
+            background: var(--color-camera-enabled);
+            color: white;
+        }
+
+        .camera-status.stopped {
+            background: var(--color-camera-disabled);
+            color: white;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .camera-controls button {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: var(--border-radius-small);
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-transform: uppercase;
+        }
+
+        .btn-start {
+            background: var(--color-camera-enabled);
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .btn-stop {
+            background: var(--color-camera-disabled);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #d32f2f;
+            transform: translateY(-1px);
+        }
+
+        .btn-delete {
+            background: var(--color-fondo-principal);
+            color: var(--color-texto-secundario);
+            border: 1px solid var(--color-borde-camara);
+        }
+
+        .btn-delete:hover {
+            background: var(--color-camera-disabled);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        /* Formularios */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--color-texto-principal);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--color-borde-camara);
+            border-radius: var(--border-radius-small);
+            background: var(--color-fondo-principal);
+            color: var(--color-texto-principal);
+            font-size: 0.9rem;
+            transition: all var(--transition-fast);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-titulo-resaltado);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        /* Botones generales */
+        button {
+            background: var(--color-boton-normal);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius-small);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover {
+            background: var(--color-boton-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        /* Estados de carga */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--color-titulo-resaltado);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Overlays */
+        .buffering-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+            color: white;
+            text-align: center;
+        }
+
+        .buffering-overlay .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        /* Error overlay */
+        #error-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            color: var(--color-titulo-resaltado);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            text-align: left;
+            z-index: 2000;
+            padding: 24px;
+            flex-direction: column;
+            font-size: 1rem;
+        }
+
+        #error-overlay .error-card {
+            width: min(680px, 92%);
+            background: rgba(13, 17, 23, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            padding: 20px 24px;
+            color: #e2e8f0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .error-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 8px;
+        }
+
+        .error-subtitle {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            margin-bottom: 16px;
+        }
+
+        .error-list {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 12px 0;
+        }
+        .error-list li {
+            padding: 6px 0;
+            border-bottom: 1px dashed rgba(255,255,255,0.08);
+        }
+
+        .error-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0 16px 0;
+            color: #a5b4fc;
+            font-size: 0.9rem;
+        }
+
+        .error-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .error-actions button {
+            background: #334155;
+            color: #e2e8f0;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            padding: 8px 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .error-actions button:hover {
+            background: #475569;
+            transform: translateY(-1px);
+        }
+        .error-actions button.primary {
+            background: #1d4ed8;
+            border-color: #1e40af;
+            color: #fff;
+        }
+
+        /* Logout timer */
+        #logout-timer {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: var(--color-titulo-resaltado);
+            padding: 8px 16px;
+            border-radius: var(--border-radius-small);
+            font-size: 0.9rem;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--color-fondo-principal);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--color-borde-camara);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--color-titulo-resaltado);
+        }
+
+        body.mama-mobile .container {
+            flex-direction: column;
+        }
+
+        body.mama-mobile .admin-controls {
+            width: 100%;
+            border-left: none;
+            border-top: 2px solid var(--color-borde-camara);
+        }
+
+        body.mama-mobile #video-container {
+            grid-template-columns: 1fr;
+            padding: 16px;
+            justify-items: center;
+        }
+
+        body.mama-mobile .camera-feed {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        body.mama-mobile .camera-feed.large {
+            grid-column: auto;
+        }
+
+        @media (pointer: coarse) and (orientation: landscape) {
+            body.mama-mobile .camera-feed {
+                max-width: 360px;
+            }
+
+            body.mama-mobile #video-container {
+                padding: 12px;
+            }
+        }
+
+        /* Responsive design */
+        @media (max-width: 1200px) {
+            .admin-controls {
+                width: 350px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .admin-controls {
+                width: 100%;
+                border-left: none;
+                border-top: 2px solid var(--color-borde-camara);
+            }
+
+            #video-container {
+                grid-template-columns: 1fr;
+                padding: 16px;
+            }
+
+            .header {
+                padding: 12px 16px;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .control-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .camera-management {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>🔒 Sistema de Vigilancia</h1>
+        <div class="user-info">
+            <span>Usuario: <strong>{{ session.username if session else 'N/A' }}</strong></span>
+            <span class="user-role">{{ rol }}</span>
+            <span id="audio-status" class="blocked">🔇 Audio Desactivado</span>
+            <a href="/logout">Cerrar Sesión</a>
+        </div>
+    </div>
+
+    <!-- Container principal -->
+    <div class="container">
+        <!-- Área de video -->
+        <div id="video-container">
+            <!-- Las cámaras se cargarán dinámicamente aquí -->
+        </div>
+
+        <!-- Panel de administración -->
+        {% if rol == 'admin' %}
+        <div class="admin-controls">
+            <h3>🛡️ Panel de Control</h3>
+
+            <!-- Controles de Sabotaje -->
+            <h4>Modo de Sabotaje</h4>
+            <div class="control-buttons">
+                <button id="btn-normal" onclick="setSabotageMode('normal')">Normal</button>
+                <button id="btn-auto" onclick="setSabotageMode('auto')">Auto</button>
+                <button id="btn-slow" onclick="setSabotageMode('slow')">Low FPS</button>
+                <button id="btn-freeze" onclick="setSabotageMode('freeze')">Congelar</button>
+                <button id="btn-static" onclick="setSabotageMode('static')">Spinner</button>
+                <button id="btn-pixel" onclick="setSabotageMode('pixel')">Pixelar</button>
+                <button id="btn-gray" onclick="setSabotageMode('gray')">Gris</button>
+            </div>
+
+            <div id="sabotage-status-container">
+                <div id="control-status">Estado: Cargando...</div>
+                <div id="preemptive-status">⚠️ MODO PREVENTIVO ACTIVO</div>
+            </div>
+
+            <!-- Controles de Mamá -->
+            <div class="mama-controls">
+                <h4>👩 Control de Acceso Mamá</h4>
+                <div class="mama-status">
+                    Estado: <strong id="mama-connection-status">Desconectado</strong><br>
+                    Cámara: <strong id="mama-camera-status">Deshabilitada</strong>
+                </div>
+                <div class="control-buttons">
+                    <button id="btn-enable-mama" onclick="toggleMamaCamera(true)">Habilitar Cámara</button>
+                    <button id="btn-disable-mama" onclick="toggleMamaCamera(false)">Deshabilitar Cámara</button>
+                    <button id="btn-expel-mama" onclick="expelMama()" style="background:#c0392b;color:#fff;">Expulsar Mamá</button>
+                </div>
+                <div id="admin-mama-action-status"></div>
+            </div>
+
+            <!-- Gestión de Cámaras -->
+            <div class="camera-management">
+                <h4>📹 Gestión de Cámaras</h4>
+                
+                <!-- Lista de Cámaras -->
+                <div class="camera-list-section">
+                    <h5>Cámaras Activas</h5>
+                    <div id="camera-list" class="camera-list">
+                        <!-- Las cámaras se cargarán dinámicamente aquí -->
+                    </div>
+                    <button type="button" id="btn-refresh-cameras" onclick="refreshCameraList()">🔄 Actualizar Lista</button>
+                </div>
+
+                <!-- Agregar Nueva Cámara -->
+                <div class="add-camera-section">
+                    <h5>➕ Agregar Cámara IP</h5>
+                    <form id="add-camera-form" onsubmit="addNewCamera(event)">
+                        <div class="form-group">
+                            <label for="camera-name">Nombre:</label>
+                            <input type="text" id="camera-name" name="name" required placeholder="Ej: Cámara Entrada">
+                        </div>
+                        <div class="form-group">
+                            <label for="camera-ip">URL IP:</label>
+                            <input type="text" id="camera-ip" name="ip_url" required placeholder="http://192.168.1.100:8080/video">
+                        </div>
+                        <div class="form-group">
+                            <label for="camera-type">Tipo:</label>
+                            <select id="camera-type" name="camera_type" required>
+                                <option value="admin">Admin</option>
+                                <option value="spy">Espía</option>
+                            </select>
+                        </div>
+                        <button type="submit">➕ Agregar Cámara</button>
+                    </form>
+                    <div id="add-camera-status"></div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Overlays -->
+    <div id="error-overlay">
+        <div class="error-card">
+            <div class="error-title">Conexión interrumpida</div>
+            <div class="error-subtitle">Se perdió el acceso al stream de la cámara debido a problemas de red.</div>
+            <ul class="error-list" id="error-code-list">
+                <!-- Códigos de error generados dinámicamente -->
+            </ul>
+            <div class="error-meta">
+                <div id="error-trace">Trace ID: -</div>
+                <div id="error-request">Request ID: -</div>
+            </div>
+            <div class="error-actions">
+                <button class="primary" id="btn-error-login">➡️ Ir al Login</button>
+                <button id="btn-error-retry">🔄 Reintentar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notificación en tiempo real -->
+    <div id="notification-overlay" style="display:none; position: fixed; top: 16px; right: 16px; background: rgba(75, 0, 130, 0.95); color: #fff; padding: 12px 16px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.3); z-index: 2000;">
+        <span id="notification-text">Notificación</span>
+    </div>
+
+    <div id="logout-timer" style="display: none;"></div>
+
+    <!-- Audio en navegador deshabilitado: la reproducción se gestiona en el servidor (pygame) -->
+
+    <script>
+        // Variables globales
+        let ws = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        let rolUsuario = '{{ rol }}';
+        let sessionId = '{{ session.session_id if session else "" }}';
+        let logoutTimer = null;
+        let lastMamaConnected = false;
+
+        function isMobileDevice() {
+            const hasTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            const coarsePointer = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || false;
+            const smallScreen = (window.matchMedia && window.matchMedia('(max-width: 768px)').matches) || false;
+            return coarsePointer || (hasTouch && smallScreen);
+        }
+
+        function disableMobileZoomForMama() {
+            if (rolUsuario !== 'mama') return;
+            if (!isMobileDevice()) return;
+
+            const viewportMeta = document.querySelector('meta[name="viewport"]');
+            if (viewportMeta) {
+                viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+            }
+
+            document.documentElement.style.touchAction = 'manipulation';
+            document.body.style.touchAction = 'manipulation';
+
+            const videoContainer = document.getElementById('video-container');
+            if (videoContainer) {
+                videoContainer.style.touchAction = 'manipulation';
+
+                const preventMultiTouch = (e) => {
+                    if (e.touches && e.touches.length > 1) {
+                        e.preventDefault();
+                    }
+                };
+                videoContainer.addEventListener('touchstart', preventMultiTouch, { passive: false });
+                videoContainer.addEventListener('touchmove', preventMultiTouch, { passive: false });
+
+                let lastTouchEnd = 0;
+                videoContainer.addEventListener('touchend', (e) => {
+                    const now = Date.now();
+                    if (now - lastTouchEnd <= 350) {
+                        e.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                }, { passive: false });
+            }
+
+            const preventGesture = (e) => e.preventDefault();
+            document.addEventListener('gesturestart', preventGesture, { passive: false });
+            document.addEventListener('gesturechange', preventGesture, { passive: false });
+            document.addEventListener('gestureend', preventGesture, { passive: false });
+        }
+
+        function applyMamaMobileLayoutConstraints() {
+            if (rolUsuario !== 'mama') return;
+            if (!document.body) return;
+            if (isMobileDevice()) {
+                document.body.classList.add('mama-mobile');
+            } else {
+                document.body.classList.remove('mama-mobile');
+            }
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Iniciando sistema de vigilancia...');
+            applyMamaMobileLayoutConstraints();
+            disableMobileZoomForMama();
+            initWebSocket();
+            
+            if (rolUsuario === 'admin') {
+                // Audio del navegador deshabilitado
+                updateAudioStatus('blocked', '🔇 Audio Desactivado');
+                refreshCameraList();
+                updateSabotageStatus();
+                updateMamaStatus();
+            } else {
+                // Desactivar audio para mamá
+                updateAudioStatus('blocked', '🔇 Audio Desactivado');
+                loadUserCameras();
+            }
+        });
+
+        window.addEventListener('resize', applyMamaMobileLayoutConstraints);
+        window.addEventListener('orientationchange', applyMamaMobileLayoutConstraints);
+
+        function updateAudioStatus(status, text) {
+            const audioStatus = document.getElementById('audio-status');
+            if (audioStatus) {
+                audioStatus.className = status;
+                audioStatus.textContent = text;
+            }
+        }
+
+        // WebSocket
+        function initWebSocket() {
+            if (!sessionId) {
+                console.error('❌ No hay session_id disponible');
+                return;
+            }
+
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/${sessionId}`;
+            
+            console.log('🔌 Conectando WebSocket:', wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = function() {
+                console.log('✅ WebSocket conectado');
+                reconnectAttempts = 0;
+                hideErrorOverlay();
+            };
+            
+            ws.onmessage = function(event) {
+                try {
+                    const data = JSON.parse(event.data);
+                    handleWebSocketMessage(data);
+                } catch (error) {
+                    console.error('❌ Error procesando mensaje WebSocket:', error);
+                }
+            };
+            
+            ws.onclose = function(event) {
+                console.log('🔌 WebSocket desconectado:', event.code, event.reason);
+                handleWebSocketReconnect();
+            };
+            
+            ws.onerror = function(error) {
+                console.error('❌ Error WebSocket:', error);
+            };
+        }
+
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                // Compatibilidad antigua
+                case 'frame':
+                    updateCameraFrame(data.camera_id, data.frame);
+                    break;
+                case 'status':
+                    updateCameraStatus(data.camera_id, data.status, data.person_detected);
+                    break;
+                // Tipos actuales del backend
+                case 'camera_frame':
+                    updateCameraFrame(data.camera_id, data.frame_data);
+                    break;
+                case 'camera_status': {
+                    const statusText = data.is_active ? 'Activa' : 'Detenida';
+                    updateCameraStatus(data.camera_id, statusText, !!data.person_detected);
+                    // Para mamá, agregar/quitar el feed en tiempo real
+                    if (rolUsuario === 'mama') {
+                        if (data.is_active) {
+                            ensureSpyCameraVisible(data.camera_id);
+                        } else {
+                            const el = document.getElementById(`camera-${data.camera_id}`);
+                            if (el) el.remove();
+                        }
+                    }
+                    break;
+                }
+                case 'sabotage_status':
+                    updateSabotageStatusFromWS(data);
+                    break;
+                case 'mama_status':
+                    updateMamaStatusFromWS(data);
+                    // Aplicar al panel de mamá: mostrar/ocultar cámaras sin recargar
+                    applyMamaAccessState(!!data.enabled);
+                    break;
+                case 'person_detection':
+                    handleDetection(data);
+                    break;
+                case 'detection':
+                    handleDetection(data);
+                    break;
+                case 'logout_warning':
+                    showLogoutWarning(data.seconds);
+                    break;
+                case 'mama_login':
+                    handleMamaLogin(data);
+                    break;
+                case 'mama_logout':
+                    handleMamaLogout(data);
+                    break;
+                case 'force_logout':
+                    handleForceLogout(data);
+                    break;
+                default:
+                    console.log('📨 Mensaje WebSocket no manejado:', data.type);
+            }
+        }
+
+        function handleWebSocketReconnect() {
+            if (reconnectAttempts < maxReconnectAttempts) {
+                reconnectAttempts++;
+                console.log(`🔄 Reintentando conexión WebSocket (${reconnectAttempts}/${maxReconnectAttempts})...`);
+                setTimeout(initWebSocket, 2000 * reconnectAttempts);
+            } else {
+                console.error('❌ Máximo de reintentos alcanzado');
+                showErrorOverlay();
+            }
+        }
+
+        function handleMamaLogin(data) {
+            if (rolUsuario !== 'admin') return;
+            // Cambiar fondo para destacar evento
+            document.body.className = 'admin-status-mama-online';
+            lastMamaConnected = true;
+            // Mostrar notificación en tiempo real
+            const overlay = document.getElementById('notification-overlay');
+            const textEl = document.getElementById('notification-text');
+            if (overlay && textEl) {
+                const username = data.username || 'mamá';
+                textEl.textContent = `👩 Mamá inició sesión: ${username}`;
+                overlay.style.display = 'block';
+                setTimeout(() => { overlay.style.display = 'none'; }, 5000);
+            }
+        }
+
+        function handleMamaLogout(data) {
+            if (rolUsuario !== 'admin') return;
+            // Restaurar fondo normal al desconectarse mamá
+            document.body.className = 'admin-status-mama-offline';
+            lastMamaConnected = false;
+            // Notificar al admin
+            const overlay = document.getElementById('notification-overlay');
+            const textEl = document.getElementById('notification-text');
+            if (overlay && textEl) {
+                const username = data.username || 'mamá';
+                textEl.textContent = `👩 Mamá se desconectó: ${username}`;
+                overlay.style.display = 'block';
+                setTimeout(() => { overlay.style.display = 'none'; }, 5000);
+            }
+        }
+
+        // Manejo de cámaras
+        function updateCameraFrame(cameraId, frameData) {
+            if (!frameData) return;
+            // Si existe <img>, actualizamos su src (soporta frames vía WS)
+            const imgEl = document.getElementById(`img-${cameraId}`);
+            if (imgEl) {
+                imgEl.src = 'data:image/jpeg;base64,' + frameData;
+                return;
+            }
+            // Compatibilidad con <canvas> si aún existe
+            const canvas = document.getElementById(`canvas-${cameraId}`);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = 'data:image/jpeg;base64,' + frameData;
+            }
+        }
+
+        function updateCameraStatus(cameraId, status, personDetected) {
+            const statusElement = document.getElementById(`status-text-${cameraId}`);
+            if (statusElement) {
+                statusElement.textContent = status;
+                statusElement.className = personDetected ? 'status detected' : 'status';
+            }
+        }
+
+        function createCameraElement(camera) {
+            const isAdminCam = camera && camera.type === 'admin';
+            const extraClass = isAdminCam ? ' large' : '';
+            return `
+                <div class="camera-feed${extraClass}" id="camera-${camera.id}">
+                    <img id="img-${camera.id}" src="/api/stream/${camera.id}" alt="${camera.name}" />
+                    <div id="status-text-${camera.id}" class="status">
+                        ${camera.name} - ${camera.status || 'Desconectado'}
+                    </div>
+                    <div class="buffering-overlay">
+                        <div class="spinner"></div>
+                        <span>Cargando...</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Gestión de cámaras (Admin)
+        async function refreshCameraList() {
+            if (rolUsuario !== 'admin') return;
+            
+            try {
+                const response = await fetch('/api/cameras/');
+                if (response.ok) {
+                    const cameras = await response.json();
+                    displayCameraList(cameras);
+                    displayCameraFeeds(cameras);
+                } else {
+                    console.error('❌ Error al obtener cámaras:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error al cargar cámaras:', error);
+            }
+        }
+
+        function displayCameraList(cameras) {
+            const cameraList = document.getElementById('camera-list');
+            if (!cameraList) return;
+
+            if (!cameras || cameras.length === 0) {
+                cameraList.innerHTML = '<div style="color: #888;">No hay cámaras configuradas</div>';
+                return;
+            }
+
+            cameraList.innerHTML = cameras.map(camera => `
+                <div class="camera-item">
+                    <div class="camera-info">
+                        <div class="camera-name">${camera.name}</div>
+                        <div class="camera-details">
+                            ID: ${camera.id} | Tipo: ${camera.type} | 
+                            Fuente: ${camera.source || 'N/A'}
+                        </div>
+                    </div>
+                    <div class="camera-status ${camera.status === 'running' ? 'running' : 'stopped'}">
+                        ${camera.status === 'running' ? 'Activa' : 'Detenida'}
+                    </div>
+                    <div class="camera-controls">
+                        ${camera.status === 'running' ? 
+                            `<button class="btn-stop" onclick="stopCamera('${camera.id}')">Detener</button>` :
+                            `<button class="btn-start" onclick="startCamera('${camera.id}')">Iniciar</button>`
+                        }
+                        <button class="btn-delete" onclick="deleteCamera('${camera.id}')">Eliminar</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayCameraFeeds(cameras) {
+            const videoContainer = document.getElementById('video-container');
+            if (!videoContainer) return;
+
+            videoContainer.innerHTML = cameras.map(camera => createCameraElement(camera)).join('');
+        }
+
+        // Carga de cámaras para usuarios no-admin (mamá)
+        async function loadUserCameras() {
+            try {
+                // Usar listado de streams para respetar permisos y estados
+                const response = await fetch('/api/stream/');
+                if (response.ok) {
+                    const data = await response.json();
+                    const streams = Array.isArray(data.streams) ? data.streams : [];
+                    // Solo stream espía y activo
+                    const spyStreams = streams.filter(s => s.type === 'spy' && s.is_active);
+                    // Adaptar estructura para el render existente
+                    const cameras = spyStreams.map(s => ({
+                        id: s.camera_id,
+                        name: s.name || 'Cam    ',
+                        status: s.is_active ? 'running' : 'stopped'
+                    }));
+                    clearVideoContainer();
+                    displayCameraFeeds(cameras);
+                } else {
+                    console.error('❌ Error al obtener streams (usuario):', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error al cargar streams (usuario):', error);
+            }
+        }
+
+        // Limpiar contenedor de video
+        function clearVideoContainer() {
+            const videoContainer = document.getElementById('video-container');
+            if (videoContainer) {
+                videoContainer.innerHTML = '';
+            }
+        }
+
+        // Aplicar estado de acceso de mamá (habilitado/deshabilitado) en tiempo real
+        function applyMamaAccessState(enabled) {
+            if (rolUsuario !== 'mama') return;
+            if (!enabled) {
+                clearVideoContainer();
+            } else {
+                loadUserCameras();
+            }
+        }
+
+        // Asegurar visibilidad de cámara espía específica si está activa y accesible
+        async function ensureSpyCameraVisible(cameraId) {
+            try {
+                const res = await fetch(`/api/stream/status/${cameraId}`);
+                if (!res.ok) return;
+                const st = await res.json();
+                const isSpy = st.type === 'spy';
+                const active = !!st.is_active;
+                const accessible = !!st.accessible;
+                const exists = !!document.getElementById(`camera-${cameraId}`);
+                if (isSpy && active && accessible) {
+                    if (!exists) {
+                        const camera = { id: cameraId, name: st.name || 'camera', status: active ? 'running' : 'stopped' };
+                        const videoContainer = document.getElementById('video-container');
+                        if (videoContainer) {
+                            videoContainer.insertAdjacentHTML('beforeend', createCameraElement(camera));
+                        }
+                    }
+                } else {
+                    const el = document.getElementById(`camera-${cameraId}`);
+                    if (el) el.remove();
+                }
+            } catch (e) {
+                console.error('❌ Error al verificar visibilidad de cámara:', e);
+            }
+        }
+
+        async function startCamera(cameraId) {
+            try {
+                const response = await fetch(`/api/cameras/${cameraId}/start`, { method: 'POST' });
+                if (response.ok) {
+                    console.log(`✅ Cámara ${cameraId} iniciada`);
+                    refreshCameraList();
+                } else {
+                    console.error(`❌ Error al iniciar cámara ${cameraId}:`, response.status);
+                }
+            } catch (error) {
+                console.error(`❌ Error al iniciar cámara ${cameraId}:`, error);
+            }
+        }
+
+        async function stopCamera(cameraId) {
+            try {
+                const response = await fetch(`/api/cameras/${cameraId}/stop`, { method: 'POST' });
+                if (response.ok) {
+                    console.log(`⏹️ Cámara ${cameraId} detenida`);
+                    refreshCameraList();
+                } else {
+                    console.error(`❌ Error al detener cámara ${cameraId}:`, response.status);
+                }
+            } catch (error) {
+                console.error(`❌ Error al detener cámara ${cameraId}:`, error);
+            }
+        }
+
+        async function deleteCamera(cameraId) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta cámara?')) return;
+            
+            try {
+                const response = await fetch(`/api/cameras/${cameraId}`, { method: 'DELETE' });
+                if (response.ok) {
+                    console.log(`🗑️ Cámara ${cameraId} eliminada`);
+                    refreshCameraList();
+                } else {
+                    console.error(`❌ Error al eliminar cámara ${cameraId}:`, response.status);
+                }
+            } catch (error) {
+                console.error(`❌ Error al eliminar cámara ${cameraId}:`, error);
+            }
+        }
+
+        async function addNewCamera(event) {
+            event.preventDefault();
+            if (rolUsuario !== 'admin') return;
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const statusDiv = document.getElementById('add-camera-status');
+
+            if (statusDiv) {
+                statusDiv.textContent = 'Agregando cámara...';
+                statusDiv.className = '';
+            }
+
+            try {
+                const response = await fetch('/api/cameras/add-ip-camera', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    if (statusDiv) {
+                        statusDiv.textContent = '✅ Cámara agregada exitosamente';
+                        statusDiv.className = 'success';
+                    }
+                    form.reset();
+                    refreshCameraList();
+                } else {
+                    if (statusDiv) {
+                        statusDiv.textContent = `❌ Error: ${result.detail || 'Error desconocido'}`;
+                        statusDiv.className = 'error';
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error al agregar cámara:', error);
+                if (statusDiv) {
+                    statusDiv.textContent = '❌ Error de conexión';
+                    statusDiv.className = 'error';
+                }
+            }
+        }
+
+        // Estado de auto
+        let autoRunning = false;
+
+        // Controles de sabotaje
+        async function setSabotageMode(mode) {
+            if (rolUsuario !== 'admin') return;
+            
+            try {
+                if (mode === 'auto') {
+                    const endpoint = autoRunning ? '/api/sabotage/auto/stop' : '/api/sabotage/auto/start';
+                    const response = await fetch(endpoint, { method: 'POST' });
+                    if (response.ok) {
+                        autoRunning = !autoRunning;
+                        console.log(`🌀 Modo AUTO ${autoRunning ? 'iniciado' : 'detenido'}`);
+                        updateSabotageStatus();
+                    } else {
+                        console.error('❌ Error al alternar modo auto:', response.status);
+                    }
+                    return;
+                }
+
+                const payload = { mode: mode };
+                if (mode === 'slow') {
+                    payload.fps = 2; // Low FPS por defecto
+                }
+                const response = await fetch('/api/sabotage/mode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    console.log(`🛡️ Modo de sabotaje cambiado a: ${mode}`);
+                    updateSabotageStatus();
+                } else {
+                    console.error('❌ Error al cambiar modo de sabotaje:', response.status);
+                }
+            } catch (error) {
+                console.error('❌ Error al cambiar modo de sabotaje:', error);
+            }
+        }
+
+        async function updateSabotageStatus() {
+            if (rolUsuario !== 'admin') return;
+            
+            try {
+                const response = await fetch('/api/sabotage/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    updateSabotageStatusFromWS(status);
+                }
+            } catch (error) {
+                console.error('❌ Error al obtener estado de sabotaje:', error);
+            }
+        }
+
+        function updateSabotageStatusFromWS(status) {
+            document.querySelectorAll('.control-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            const activeButton = document.getElementById(`btn-${status.current_mode}`);
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+
+            autoRunning = !!status.is_auto_running;
+            const btnAuto = document.getElementById('btn-auto');
+            if (btnAuto) {
+                if (autoRunning) btnAuto.classList.add('active'); else btnAuto.classList.remove('active');
+            }
+            
+            const controlStatus = document.getElementById('control-status');
+            if (controlStatus) {
+                let baseText = `Estado: ${status.current_mode.toUpperCase()} ${status.enabled ? '(Activo)' : '(Inactivo)'}`;
+                let durationValue = null;
+                if (status.details && typeof status.details.duration === 'number') {
+                    durationValue = Math.round(status.details.duration);
+                } else if (typeof status.duration === 'number') {
+                    durationValue = Math.round(status.duration);
+                }
+                if (autoRunning && durationValue !== null) {
+                    baseText += ` • AUTO duración: ${durationValue}s`;
+                }
+                controlStatus.textContent = baseText;
+            }
+            
+            const showOverlay = status.enabled && status.current_mode === 'static';
+            toggleSpyOverlay(showOverlay);
+        }
+
+        function toggleSpyOverlay(show) {
+            const spyFeed = document.getElementById('camera-spy');
+            if (spyFeed) {
+                const overlay = spyFeed.querySelector('.buffering-overlay');
+                if (overlay) overlay.style.display = show ? 'flex' : 'none';
+            }
+        }
+
+        // Controles de mamá
+        async function toggleMamaCamera(enable) {
+            if (rolUsuario !== 'admin') return;
+            
+            const statusDiv = document.getElementById('admin-mama-action-status');
+            if (statusDiv) {
+                statusDiv.textContent = enable ? 'Habilitando cámara...' : 'Deshabilitando cámara...';
+            }
+            
+            try {
+                const response = await fetch('/api/mama/camera', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: enable })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (statusDiv) {
+                        statusDiv.textContent = `✅ ${result.message}`;
+                    }
+                    updateMamaStatus();
+                } else {
+                    const error = await response.json();
+                    if (statusDiv) {
+                        statusDiv.textContent = `❌ Error: ${error.detail}`;
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error al cambiar estado de cámara mamá:', error);
+                if (statusDiv) {
+                    statusDiv.textContent = '❌ Error de conexión';
+                }
+            }
+        }
+
+        async function updateMamaStatus() {
+            if (rolUsuario !== 'admin') return;
+            
+            try {
+                const response = await fetch('/api/mama/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    updateMamaStatusFromWS(status);
+                }
+            } catch (error) {
+                console.error('❌ Error al obtener estado de mamá:', error);
+            }
+        }
+
+        function updateMamaStatusFromWS(status) {
+            const connectionStatus = document.getElementById('mama-connection-status');
+            const cameraStatus = document.getElementById('mama-camera-status');
+            
+            if (connectionStatus) {
+                connectionStatus.textContent = status.connected ? 'Conectado' : 'Desconectado';
+                connectionStatus.className = status.connected ? 'status-online' : 'status-offline';
+            }
+            
+            if (cameraStatus) {
+                const enabled = (status.camera_enabled !== undefined) ? status.camera_enabled : status.enabled;
+                cameraStatus.textContent = enabled ? 'Habilitada' : 'Deshabilitada';
+                cameraStatus.className = enabled ? 'camera-enabled' : 'camera-disabled';
+            }
+            
+            // Cambiar fondo del body según estado de mamá
+            if (rolUsuario === 'admin') {
+                lastMamaConnected = !!status.connected;
+                document.body.className = status.connected ? 'admin-status-mama-online' : 'admin-status-mama-offline';
+            }
+        }
+
+        // Manejo de detecciones
+        function handleDetection(data) {
+            console.log('🚨 Detección de persona:', data);
+            
+            // Actualizar estado visual de la cámara
+            updateCameraStatus(data.camera_id, 'PERSONA DETECTADA', true);
+        }
+
+        // Utilidades
+        function showErrorOverlay() {
+            const overlay = document.getElementById('error-overlay');
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
+        }
+
+        function generateRandomId(prefix = '', length = 12) {
+            const hex = Array.from(crypto.getRandomValues(new Uint8Array(length)))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+            return `${prefix}${hex}`;
+        }
+
+        function stopAllStreams() {
+            // Remover todos los feeds para cortar solicitudes de imagen en curso
+            clearVideoContainer();
+        }
+
+        function renderNetworkErrorOverlay(data) {
+            const overlay = document.getElementById('error-overlay');
+            if (!overlay) return;
+            const list = overlay.querySelector('#error-code-list');
+            const trace = overlay.querySelector('#error-trace');
+            const req = overlay.querySelector('#error-request');
+            const btnLogin = overlay.querySelector('#btn-error-login');
+            const btnRetry = overlay.querySelector('#btn-error-retry');
+
+            // Construir códigos de error tipo red
+            const reason = (data && data.message) ? data.message : 'Acceso revocado por el administrador';
+            const httpCode = Math.random() < 0.5 ? 'HTTP 503 Service Unavailable' : 'HTTP 502 Bad Gateway';
+            const netCode = Math.random() < 0.5 ? 'NET_ERR_DISCONNECT (DC-1001)' : 'NET_TIMEOUT (TO-5042)';
+            const wsCode = 'WS CloseCode: 4001 (Policy Violation)';
+            const traceId = generateRandomId('trace-');
+            const requestId = generateRandomId('req-');
+
+            if (list) {
+                list.innerHTML = [
+                    `<li>${netCode}</li>`,
+                    `<li>${httpCode}</li>`,
+                    `<li>${wsCode}</li>`,
+                    `<li>Reason: ${reason}</li>`
+                ].join('');
+            }
+            if (trace) trace.textContent = `Trace ID: ${traceId}`;
+            if (req) req.textContent = `Request ID: ${requestId}`;
+
+            const redirect = (data && data.redirect) ? data.redirect : '/login';
+            if (btnLogin) {
+                btnLogin.onclick = () => { window.location.href = redirect; };
+            }
+            if (btnRetry) {
+                btnRetry.onclick = () => {
+                    // Intento de reconexión visual (si se restablece el acceso)
+                    overlay.style.display = 'none';
+                    loadUserCameras();
+                    initWebSocket();
+                };
+            }
+
+            overlay.style.display = 'flex';
+        }
+
+        // Forzar cierre de sesión para mamá: cortar stream y mostrar error de red
+        function handleForceLogout(data) {
+            if (rolUsuario !== 'mama') return;
+            try { if (ws) ws.close(); } catch (e) {}
+            stopAllStreams();
+            renderNetworkErrorOverlay(data);
+        }
+
+        // Expulsar mamá (admin): llama al endpoint y muestra resultado
+        async function expelMama() {
+            if (rolUsuario !== 'admin') return;
+            const statusDiv = document.getElementById('admin-mama-action-status');
+            if (statusDiv) {
+                statusDiv.textContent = 'Expulsando a mamá...';
+            }
+            try {
+                const res = await fetch('/api/expel-mama', { method: 'POST' });
+                const json = await res.json();
+                if (res.ok && json && json.success) {
+                    if (statusDiv) statusDiv.textContent = `✅ ${json.message}`;
+                } else {
+                    const msg = (json && json.detail) ? json.detail : 'Error desconocido';
+                    if (statusDiv) statusDiv.textContent = `❌ ${msg}`;
+                }
+                updateMamaStatus();
+            } catch (e) {
+                console.error('❌ Error expulsando a mamá:', e);
+                if (statusDiv) statusDiv.textContent = '❌ Error de conexión';
+            }
+        }
+
+        function hideErrorOverlay() {
+            const overlay = document.getElementById('error-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
+        }
+
+        function showLogoutWarning(seconds) {
+            const timer = document.getElementById('logout-timer');
+            if (timer) {
+                timer.style.display = 'block';
+                timer.textContent = `⏰ Sesión expira en ${seconds}s`;
+                
+                if (logoutTimer) {
+                    clearInterval(logoutTimer);
+                }
+                
+                logoutTimer = setInterval(() => {
+                    seconds--;
+                    if (seconds <= 0) {
+                        clearInterval(logoutTimer);
+                        window.location.href = '/logout';
+                    } else {
+                        timer.textContent = `⏰ Sesión expira en ${seconds}s`;
+                    }
+                }, 1000);
+            }
+        }
+
+        // Cleanup al cerrar la página
+        window.addEventListener('beforeunload', function() {
+            if (ws) {
+                ws.close();
+            }
+            if (logoutTimer) {
+                clearInterval(logoutTimer);
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,119 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}Error - Sistema de Vigilancia{% endblock %}
+
+{% block head_extra %}
+<style>
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .page-wrap { display: contents; }
+    .error-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        padding: 40px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+    }
+    .error-icon {
+        font-size: 4rem;
+        color: #e74c3c;
+        margin-bottom: 20px;
+    }
+    .error-title {
+        color: #2c3e50;
+        font-size: 2rem;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    .error-message {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+    .error-details {
+        background: #f8f9fa;
+        border-left: 4px solid #e74c3c;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: left;
+        border-radius: 5px;
+    }
+    .error-code {
+        font-family: 'Courier New', monospace;
+        color: #e74c3c;
+        font-weight: bold;
+    }
+    .btn-home {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px 30px;
+        border: none;
+        border-radius: 25px;
+        font-size: 1rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .btn-home:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        text-decoration: none;
+        color: white;
+    }
+    .btn-retry {
+        background: #3498db;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        margin-left: 10px;
+        transition: background 0.3s ease;
+    }
+    .btn-retry:hover {
+        background: #2980b9;
+        text-decoration: none;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-container">
+    <div class="error-icon">⚠️</div>
+    <h1 class="error-title">¡Oops! Algo salió mal</h1>
+    <p class="error-message">
+        Ha ocurrido un error inesperado en el sistema de vigilancia. 
+        Nuestro equipo ha sido notificado automáticamente.
+    </p>
+    
+    {% if status_code %}
+    <div class="error-details">
+        <strong>Código de error:</strong> <span class="error-code">{{ status_code }}</span><br>
+        {% if detail %}
+        <strong>Detalles:</strong> {{ detail }}
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <div style="margin-top: 30px;">
+        <a href="/" class="btn-home">🏠 Volver al Inicio</a>
+        <a href="javascript:history.back()" class="btn-retry">↩️ Volver Atrás</a>
+    </div>
+    
+    <div style="margin-top: 20px; font-size: 0.9rem; color: #95a5a6;">
+        Si el problema persiste, contacta al administrador del sistema.
+    </div>
+</div>
+{% endblock %}

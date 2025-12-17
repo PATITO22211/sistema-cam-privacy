@@ -1,0 +1,55 @@
+{% set page_title = page_title or "Sistema de Vigilancia" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ page_title }}{% endblock %}</title>
+    <!-- Estilos básicos comunes -->
+    <style>
+        :root {
+            --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --bg-body: #f0f2f5;
+            --text-color: #222;
+        }
+        html, body { height: 100%; }
+        body {
+            margin: 0;
+            font-family: var(--font-ui);
+            color: var(--text-color);
+            background-color: var(--bg-body);
+        }
+        .page-wrap {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        main {
+            flex: 1 1 auto;
+        }
+        footer {
+            padding: 12px 16px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+    {% block head_extra %}{% endblock %}
+    {% block head_links %}{% endblock %}
+    {% block head_scripts %}{% endblock %}
+    {% block meta %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <div class="page-wrap">
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+        <footer>
+            {% block footer %}
+            © {{ (now() if false else "") }} Sistema de Vigilancia
+            {% endblock %}
+        </footer>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
