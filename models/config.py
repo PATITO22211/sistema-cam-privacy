@@ -175,10 +175,10 @@ class UserConfig:
 
 
 class TvOverlayConfig:
-    """Aviso en la Android TV (app TvOverlay) cuando alguna cámara ve a una persona.
+    """Valores de fábrica del aviso en la tele.
 
-    Para prenderlo cambia `enabled` a True y pon la IP de la tele en `tv_ip`.
-    El resto puede quedarse como está.
+    El panel de admin puede cambiarlos sin reiniciar. Eso se guarda en
+    data/tv_settings.json y, si existe, se usa en lugar de estos defaults.
     """
 
     enabled = False
@@ -188,6 +188,7 @@ class TvOverlayConfig:
     title = "Alerta"  # título opcional. Déjalo vacío si no quieres título.
     duration = 8  # segundos que el aviso se queda en pantalla
     cooldown_seconds = 30  # por cámara, para no spamear cada frame
+    rest_fallback = True  # si ADB falla, POST directo al API de TvOverlay
     tvoverlay_port = 5001  # API local de TvOverlay, POST /notify
     adb_local_port = 15001  # puerto en esta PC para el túnel `adb forward`
 

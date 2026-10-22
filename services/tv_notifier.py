@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 from typing import Callable, Optional
 
-from models.config import TvOverlayConfig
+from services.tv_settings import tv_settings
 
 
 NOTIFY_PATH = "/notify"
@@ -111,15 +111,16 @@ class TvOverlayNotifier:
     def notify_detection(self, camera_id: str, name: Optional[str] = None, number: Optional[int] = None) -> None:
         """Regresa al instante. El hilo de video no espera a ADB."""
         try:
-            if not TvOverlayConfig.enabled:
+            cfg = tv_settings.snapshot()
+            if not cfg.get("enabled"):
                 return
-            if not (TvOverlayConfig.tv_ip or "").strip():
+            if not str(cfg.get("tv_ip") or "").strip():
                 if not self._missing_ip_logged:
                     self._missing_ip_logged = True
-                    self._log("avisos automáticos apagados: falta tv_ip en TvOverlayConfig")
+                    self._log("avisos automáticos apagados: falta la IP de la tele")
                 return
             now = time.monotonic()
-            cooldown = float(TvOverlayConfig.cooldown_seconds)
+            cooldown = float(cfg.get("cooldown_seconds") or 0)
             with self._cooldown_lock:
                 last = self._last_sent.get(camera_id, 0.0)
                 if now - last < cooldown:
@@ -133,48 +134,89 @@ class TvOverlayNotifier:
         except Exception as exc:
             self._log(f"no se pudo encolar el aviso: {exc}")
 
-    def send_notification(self, message: str, title: Optional[str] = None, duration: Optional[int] = None) -> bool:
+    def send_notification(
+        self,
+        message: str,
+        title: Optional[str] = None,
+        duration: Optional[int] = None,
+        settings: Optional[dict] = None,
+    ) -> bool:
         """Envío síncrono para la prueba. Nunca lanza: False si no se pudo."""
+        return bool(self.send_detailed(message, title, duration, settings).get("ok"))
+
+    def send_detailed(
+        self,
+        message: str,
+        title: Optional[str] = None,
+        duration: Optional[int] = None,
+        settings: Optional[dict] = None,
+    ) -> dict:
+        """Manda el aviso y dice si salió por ADB o por el API directo."""
         try:
             with self._send_lock:
-                return self._send_locked(message, title, duration)
+                return self._send_locked(message, title, duration, settings)
         except Exception as exc:
             self._log(f"error enviando aviso: {exc}")
-            return False
+            return {"ok": False, "via": None, "detail": "No se pudo enviar el aviso."}
 
-    def _send_locked(self, message: str, title: Optional[str], duration: Optional[int]) -> bool:
-        ip = (TvOverlayConfig.tv_ip or "").strip()
+    def _send_locked(
+        self,
+        message: str,
+        title: Optional[str],
+        duration: Optional[int],
+        settings: Optional[dict],
+    ) -> dict:
+        cfg = dict(settings) if settings is not None else tv_settings.snapshot()
+        ip = str(cfg.get("tv_ip") or "").strip()
         if not ip:
-            self._log("falta tv_ip en TvOverlayConfig")
-            return False
+            self._log("falta la IP de la tele")
+            return {"ok": False, "via": None, "detail": "Falta la IP de la tele."}
 
-        serial = f"{ip}:{int(TvOverlayConfig.adb_port)}"
-        payload = self._payload(message, title, duration)
-        sent = False
+        serial = f"{ip}:{int(cfg.get('adb_port') or 5555)}"
+        payload = self._payload(message, title, duration, cfg)
         try:
-            if self._ensure_connected(serial) and self._forward(serial):
-                local_url = f"http://127.0.0.1:{int(TvOverlayConfig.adb_local_port)}{NOTIFY_PATH}"
-                sent = self._post(local_url, payload)
-                if sent:
+            if self._ensure_connected(serial, cfg) and self._forward(serial, cfg):
+                local_url = f"http://127.0.0.1:{int(cfg.get('adb_local_port') or 15001)}{NOTIFY_PATH}"
+                if self._post(local_url, payload):
                     self._log(f"aviso enviado por ADB: {message}")
-                    return True
+                    return {
+                        "ok": True,
+                        "via": "adb",
+                        "detail": "Conectado por ADB. Aviso enviado a la tele.",
+                    }
         except Exception as exc:
             self._log(f"ADB falló: {exc}")
 
+        if not cfg.get("rest_fallback", True):
+            self._log("ADB no conectó y el respaldo por API está apagado")
+            return {
+                "ok": False,
+                "via": None,
+                "detail": "ADB no conectó y el respaldo por API está apagado.",
+            }
+
         try:
-            direct_url = f"http://{ip}:{int(TvOverlayConfig.tvoverlay_port)}{NOTIFY_PATH}"
+            direct_url = f"http://{ip}:{int(cfg.get('tvoverlay_port') or 5001)}{NOTIFY_PATH}"
             if self._post(direct_url, payload):
                 self._log(f"aviso enviado por API directa: {message}")
-                return True
+                return {
+                    "ok": True,
+                    "via": "rest",
+                    "detail": "ADB no conectó. El aviso salió por el API directo de TvOverlay.",
+                }
         except Exception as exc:
             self._log(f"API directa falló: {exc}")
 
         self._log(f"no se pudo avisar a la tele: {message}")
-        return False
+        return {
+            "ok": False,
+            "via": None,
+            "detail": "No se pudo conectar por ADB ni por el API de TvOverlay.",
+        }
 
-    def _payload(self, message: str, title: Optional[str], duration: Optional[int]) -> dict:
-        chosen_title = TvOverlayConfig.title if title is None else title
-        chosen_duration = TvOverlayConfig.duration if duration is None else duration
+    def _payload(self, message: str, title: Optional[str], duration: Optional[int], cfg: dict) -> dict:
+        chosen_title = cfg.get("title") if title is None else title
+        chosen_duration = cfg.get("duration") if duration is None else duration
         payload = {
             "message": message,
             "source": SOURCE_NAME,
@@ -184,27 +226,27 @@ class TvOverlayNotifier:
             payload["title"] = str(chosen_title)
         return payload
 
-    def _ensure_connected(self, serial: str) -> bool:
-        state = self._query_state(serial)
+    def _ensure_connected(self, serial: str, cfg: dict) -> bool:
+        state = self._query_state(serial, cfg)
         if state == "device":
             return True
         self._log(f"ADB no está listo ({state or 'desconectado'}), reconectando {serial}")
-        self._run([self._adb(), "connect", serial])
-        state = self._query_state(serial)
+        self._run([self._adb(cfg), "connect", serial])
+        state = self._query_state(serial, cfg)
         if state == "device":
             return True
-        self._run([self._adb(), "disconnect", serial])
-        self._run([self._adb(), "connect", serial])
-        state = self._query_state(serial)
+        self._run([self._adb(cfg), "disconnect", serial])
+        self._run([self._adb(cfg), "connect", serial])
+        state = self._query_state(serial, cfg)
         if state != "device":
             self._log(f"adb connect no dejó la tele lista ({state or 'sin dispositivo'})")
         return state == "device"
 
-    def _forward(self, serial: str) -> bool:
-        local_port = int(TvOverlayConfig.adb_local_port)
-        remote_port = int(TvOverlayConfig.tvoverlay_port)
+    def _forward(self, serial: str, cfg: dict) -> bool:
+        local_port = int(cfg.get("adb_local_port") or 15001)
+        remote_port = int(cfg.get("tvoverlay_port") or 5001)
         proc = self._run([
-            self._adb(),
+            self._adb(cfg),
             "-s",
             serial,
             "forward",
@@ -217,8 +259,8 @@ class TvOverlayNotifier:
             return False
         return True
 
-    def _query_state(self, serial: str) -> Optional[str]:
-        proc = self._run([self._adb(), "devices"])
+    def _query_state(self, serial: str, cfg: dict) -> Optional[str]:
+        proc = self._run([self._adb(cfg), "devices"])
         if getattr(proc, "returncode", 1) != 0:
             return None
         for line in (getattr(proc, "stdout", "") or "").splitlines():
@@ -233,8 +275,10 @@ class TvOverlayNotifier:
     def _run(self, args, timeout: float = 8):
         return self._runner(args, timeout)
 
-    def _adb(self) -> str:
-        path = (TvOverlayConfig.adb_path or "adb").strip()
+    def _adb(self, cfg: Optional[dict] = None) -> str:
+        if cfg is None:
+            cfg = tv_settings.snapshot()
+        path = str(cfg.get("adb_path") or "adb").strip()
         return path or "adb"
 
     def _worker(self) -> None:

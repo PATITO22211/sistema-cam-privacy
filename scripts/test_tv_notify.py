@@ -12,20 +12,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from models.config import TvOverlayConfig
 from services.tv_notifier import tv_notifier
+from services.tv_settings import tv_settings
 
 
 def main() -> int:
     message = " ".join(sys.argv[1:]).strip() or "Cámara 1 detectó a una persona"
-    ip = (TvOverlayConfig.tv_ip or "").strip()
-    if not TvOverlayConfig.enabled:
-        print("TvOverlayConfig.enabled está en False. Este script igual intenta el aviso.")
-        print("Los avisos automáticos siguen apagados hasta que lo pongas en True.")
+    cfg = tv_settings.snapshot()
+    ip = str(cfg.get("tv_ip") or "").strip()
+    if not cfg.get("enabled"):
+        print("Los avisos automáticos están apagados. Este script igual intenta el aviso.")
+        print("Préndelos en el panel de admin o en TvOverlayConfig.")
     if not ip:
-        print("Falta tv_ip en models/config.py, clase TvOverlayConfig.")
+        print("Falta la IP de la tele. Ponla en el panel de admin o en TvOverlayConfig.")
         return 1
-    print(f"Enviando a {ip}:{TvOverlayConfig.adb_port} -> {message}")
+    print(f"Enviando a {ip}:{cfg.get('adb_port')} -> {message}")
     ok = tv_notifier.send_notification(message)
     if ok:
         print("Listo. Revisa la tele.")

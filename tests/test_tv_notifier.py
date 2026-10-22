@@ -6,6 +6,7 @@ import pytest
 
 from models.config import TvOverlayConfig, UserConfig
 from services.tv_notifier import TvOverlayNotifier, build_detection_message
+from services.tv_settings import tv_settings
 
 
 SERIAL = "192.168.1.50:5555"
@@ -54,8 +55,10 @@ def tv_config():
         "cooldown_seconds",
         "tvoverlay_port",
         "adb_local_port",
+        "rest_fallback",
     )
     saved = {name: getattr(TvOverlayConfig, name) for name in fields}
+    saved_file = tv_settings._saved
     TvOverlayConfig.enabled = True
     TvOverlayConfig.tv_ip = "192.168.1.50"
     TvOverlayConfig.adb_port = 5555
@@ -65,7 +68,10 @@ def tv_config():
     TvOverlayConfig.cooldown_seconds = 30
     TvOverlayConfig.tvoverlay_port = 5001
     TvOverlayConfig.adb_local_port = 15001
+    TvOverlayConfig.rest_fallback = True
+    tv_settings._saved = None
     yield
+    tv_settings._saved = saved_file
     for name, value in saved.items():
         setattr(TvOverlayConfig, name, value)
 
