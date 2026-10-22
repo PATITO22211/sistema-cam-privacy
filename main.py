@@ -11,7 +11,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routers
-from routers import auth, pages, cameras, sabotage, streaming, websockets, mama
+from routers import auth, pages, cameras, sabotage, streaming, websockets, mama, tv
 
 # Import services
 from services.camera_service import camera_manager
@@ -99,6 +99,7 @@ app.include_router(sabotage.router)
 app.include_router(streaming.router)
 app.include_router(websockets.router)
 app.include_router(mama.router)
+app.include_router(tv.router)
 
 
 # Callback functions for camera events

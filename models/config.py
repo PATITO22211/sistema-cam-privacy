@@ -147,7 +147,7 @@ class UserConfig:
     
     # Default user credentials (should be moved to database in production)
     CREDENTIALS = {
-        "admin": "ad",
+        "admin": "admin",
         "1234": "1234",  # mama's credentials
     }
     
@@ -172,6 +172,25 @@ class UserConfig:
     def is_mama(cls, username: str) -> bool:
         """Check if user is mama"""
         return username == cls.MAMA_USERNAME
+
+
+class TvOverlayConfig:
+    """Valores de fábrica del aviso en la tele.
+
+    El panel de admin puede cambiarlos sin reiniciar. Eso se guarda en
+    data/tv_settings.json y, si existe, se usa en lugar de estos defaults.
+    """
+
+    enabled = False
+    tv_ip = ""  # ejemplo: "192.168.1.80"
+    adb_port = 5555
+    adb_path = "adb"  # o r"C:\platform-tools\adb.exe" si no está en el PATH
+    title = "Alerta"  # título opcional. Déjalo vacío si no quieres título.
+    duration = 8  # segundos que el aviso se queda en pantalla
+    cooldown_seconds = 30  # por cámara, para no spamear cada frame
+    rest_fallback = True  # si ADB falla, POST directo al API de TvOverlay
+    tvoverlay_port = 5001  # API local de TvOverlay, POST /notify
+    adb_local_port = 15001  # puerto en esta PC para el túnel `adb forward`
 
 
 # Global settings instance

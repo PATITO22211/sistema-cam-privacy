@@ -519,6 +519,35 @@
             box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
         }
 
+        .tv-settings .tv-check {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            color: var(--color-texto-principal);
+            font-weight: 500;
+        }
+
+        .tv-settings .tv-check input {
+            width: auto;
+            accent-color: var(--color-titulo-resaltado);
+        }
+
+        .tv-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .tv-hint,
+        #tv-connection-status,
+        #tv-notify-status {
+            margin-top: 12px;
+            color: var(--color-texto-secundario);
+            font-size: 0.85rem;
+        }
+
         /* Botones generales */
         button {
             background: var(--color-boton-normal);
@@ -842,6 +871,59 @@
                 <div id="admin-mama-action-status"></div>
             </div>
 
+            <div class="add-camera-section tv-settings">
+                <h5>📺 Aviso en la tele</h5>
+                <form id="tv-settings-form" onsubmit="saveTvSettings(event)">
+                    <label class="tv-check" for="tv-enabled">
+                        <input type="checkbox" id="tv-enabled">
+                        Avisos automáticos
+                    </label>
+                    <div class="form-group">
+                        <label for="tv-ip">IP de la tele</label>
+                        <input type="text" id="tv-ip" placeholder="192.168.1.80" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-adb-port">Puerto ADB</label>
+                        <input type="number" id="tv-adb-port" min="1" max="65535" placeholder="5555">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-adb-path">Ruta de adb</label>
+                        <input type="text" id="tv-adb-path" placeholder="adb">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-title">Título (opcional)</label>
+                        <input type="text" id="tv-title" maxlength="80" placeholder="Alerta">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-duration">Duración en pantalla (segundos)</label>
+                        <input type="number" id="tv-duration" min="1" max="3600" placeholder="8">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-cooldown">Cooldown por cámara (segundos)</label>
+                        <input type="number" id="tv-cooldown" min="0.1" step="0.1" placeholder="30">
+                    </div>
+                    <label class="tv-check" for="tv-rest-fallback">
+                        <input type="checkbox" id="tv-rest-fallback">
+                        Si ADB falla, usar el API de TvOverlay
+                    </label>
+                    <div class="form-group">
+                        <label for="tv-overlay-port">Puerto del API (respaldo)</label>
+                        <input type="number" id="tv-overlay-port" min="1" max="65535" placeholder="5001">
+                    </div>
+                    <div class="form-group">
+                        <label for="tv-local-port">Puerto local del túnel ADB</label>
+                        <input type="number" id="tv-local-port" min="1" max="65535" placeholder="15001">
+                    </div>
+                    <div class="tv-actions">
+                        <button type="submit">Guardar</button>
+                        <button type="button" id="btn-test-tv" onclick="testTvNotification()">Probar aviso TV</button>
+                    </div>
+                </form>
+                <div id="tv-connection-status">Estado: sin probar</div>
+                <div id="tv-notify-status"></div>
+                <p class="tv-hint">Guardar aplica al momento y se queda aunque reinicies. Probar usa lo que está escrito aquí, aunque no lo hayas guardado.</p>
+            </div>
+
             <!-- Gestión de Cámaras -->
             <div class="camera-management">
                 <h4>📹 Gestión de Cámaras</h4>
@@ -991,6 +1073,7 @@
                 refreshCameraList();
                 updateSabotageStatus();
                 updateMamaStatus();
+                loadTvSettings();
             } else {
                 // Desactivar audio para mamá
                 updateAudioStatus('blocked', '🔇 Audio Desactivado');
@@ -1659,6 +1742,118 @@
             try { if (ws) ws.close(); } catch (e) {}
             stopAllStreams();
             renderNetworkErrorOverlay(data);
+        }
+
+        function readTvForm() {
+            return {
+                enabled: document.getElementById('tv-enabled').checked,
+                tv_ip: document.getElementById('tv-ip').value.trim(),
+                adb_port: document.getElementById('tv-adb-port').value.trim(),
+                adb_path: document.getElementById('tv-adb-path').value.trim(),
+                title: document.getElementById('tv-title').value,
+                duration: document.getElementById('tv-duration').value.trim(),
+                cooldown_seconds: document.getElementById('tv-cooldown').value.trim(),
+                rest_fallback: document.getElementById('tv-rest-fallback').checked,
+                tvoverlay_port: document.getElementById('tv-overlay-port').value.trim(),
+                adb_local_port: document.getElementById('tv-local-port').value.trim()
+            };
+        }
+
+        function fillTvForm(data) {
+            document.getElementById('tv-enabled').checked = !!data.enabled;
+            document.getElementById('tv-ip').value = data.tv_ip || '';
+            document.getElementById('tv-adb-port').value = data.adb_port ?? '';
+            document.getElementById('tv-adb-path').value = data.adb_path || '';
+            document.getElementById('tv-title').value = data.title || '';
+            document.getElementById('tv-duration').value = data.duration ?? '';
+            document.getElementById('tv-cooldown').value = data.cooldown_seconds ?? '';
+            document.getElementById('tv-rest-fallback').checked = data.rest_fallback !== false;
+            document.getElementById('tv-overlay-port').value = data.tvoverlay_port ?? '';
+            document.getElementById('tv-local-port').value = data.adb_local_port ?? '';
+        }
+
+        function tvMessage(json) {
+            if (!json) return 'No se pudo completar';
+            if (json.message) return json.message;
+            if (typeof json.detail === 'string') return json.detail;
+            if (json.detail && json.detail.message) return json.detail.message;
+            return 'No se pudo completar';
+        }
+
+        function setTvConnectionStatus(text) {
+            const el = document.getElementById('tv-connection-status');
+            if (el) el.textContent = text;
+        }
+
+        async function loadTvSettings() {
+            if (rolUsuario !== 'admin') return;
+            try {
+                const res = await fetch('/api/tv/settings');
+                const json = await res.json();
+                if (!res.ok || !json || !json.data) return;
+                fillTvForm(json.data);
+                setTvConnectionStatus(json.data.enabled
+                    ? 'Avisos automáticos: prendidos'
+                    : 'Avisos automáticos: apagados');
+            } catch (e) {
+                console.error('No se pudieron cargar los ajustes de la tele:', e);
+            }
+        }
+
+        async function saveTvSettings(event) {
+            event.preventDefault();
+            if (rolUsuario !== 'admin') return;
+            const statusDiv = document.getElementById('tv-notify-status');
+            if (statusDiv) statusDiv.textContent = 'Guardando...';
+            try {
+                const res = await fetch('/api/tv/settings', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(readTvForm())
+                });
+                const json = await res.json();
+                if (res.ok && json && json.success) {
+                    if (statusDiv) statusDiv.textContent = `✅ ${json.message}`;
+                    setTvConnectionStatus(json.data && json.data.enabled
+                        ? 'Avisos automáticos: prendidos'
+                        : 'Avisos automáticos: apagados');
+                } else if (statusDiv) {
+                    statusDiv.textContent = `❌ ${tvMessage(json)}`;
+                }
+            } catch (e) {
+                console.error('Error guardando ajustes TV:', e);
+                if (statusDiv) statusDiv.textContent = '❌ Error de conexión';
+            }
+        }
+
+        async function testTvNotification() {
+            if (rolUsuario !== 'admin') return;
+            const statusDiv = document.getElementById('tv-notify-status');
+            if (statusDiv) statusDiv.textContent = 'Enviando aviso a la tele...';
+            try {
+                const res = await fetch('/api/tv/test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(readTvForm())
+                });
+                const json = await res.json();
+                const via = json && json.data ? json.data.via : null;
+                if (via === 'adb') {
+                    setTvConnectionStatus('Estado: conectado por ADB');
+                } else if (via === 'rest') {
+                    setTvConnectionStatus('Estado: ADB no conectó, salió por el API');
+                } else if (!json || !json.success) {
+                    setTvConnectionStatus('Estado: sin conexión');
+                }
+                if (statusDiv) {
+                    const prefix = (res.ok && json && json.success) ? '✅ ' : '❌ ';
+                    statusDiv.textContent = prefix + tvMessage(json);
+                }
+            } catch (e) {
+                console.error('Error enviando aviso TV:', e);
+                setTvConnectionStatus('Estado: sin conexión');
+                if (statusDiv) statusDiv.textContent = '❌ Error de conexión';
+            }
         }
 
         // Expulsar mamá (admin): llama al endpoint y muestra resultado
