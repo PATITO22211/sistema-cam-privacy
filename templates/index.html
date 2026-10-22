@@ -842,6 +842,14 @@
                 <div id="admin-mama-action-status"></div>
             </div>
 
+            <div class="mama-controls">
+                <h4>📺 Aviso en la tele</h4>
+                <div class="control-buttons">
+                    <button type="button" id="btn-test-tv" onclick="testTvNotification()">Probar aviso TV</button>
+                </div>
+                <div id="tv-notify-status"></div>
+            </div>
+
             <!-- Gestión de Cámaras -->
             <div class="camera-management">
                 <h4>📹 Gestión de Cámaras</h4>
@@ -1659,6 +1667,25 @@
             try { if (ws) ws.close(); } catch (e) {}
             stopAllStreams();
             renderNetworkErrorOverlay(data);
+        }
+
+        async function testTvNotification() {
+            if (rolUsuario !== 'admin') return;
+            const statusDiv = document.getElementById('tv-notify-status');
+            if (statusDiv) statusDiv.textContent = 'Enviando aviso a la tele...';
+            try {
+                const res = await fetch('/api/tv/test', { method: 'POST' });
+                const json = await res.json();
+                if (res.ok && json && json.success) {
+                    if (statusDiv) statusDiv.textContent = `✅ ${json.message}`;
+                } else {
+                    const msg = (json && (json.message || json.detail)) ? (json.message || json.detail) : 'No se pudo enviar';
+                    if (statusDiv) statusDiv.textContent = `❌ ${msg}`;
+                }
+            } catch (e) {
+                console.error('Error enviando aviso TV:', e);
+                if (statusDiv) statusDiv.textContent = '❌ Error de conexión';
+            }
         }
 
         // Expulsar mamá (admin): llama al endpoint y muestra resultado

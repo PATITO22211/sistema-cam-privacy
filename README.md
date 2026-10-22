@@ -108,8 +108,20 @@ Efectos diseñados para parecer errores técnicos creíbles:
 
 1. Dale a tu mamá la dirección de la ip de tu computadora (lo puedes saber ejecutando ipconfig en cmd)
 2. `http://TU-IP:8000/login` y las credenciales `1234` / `1234`.
-3. Tú entra a `localhost:8000` como `admin` / `ad`.
+3. Tú entra a `localhost:8000` como `admin` / `admin`.
 4. ¡Disfruta de tu privacidad sin nervios! Si el sistema te avisa que alguien viene, o si simplemente quieres intimidad, activa el sabotaje y relájate.
+
+## 📺 Aviso en la tele (TvOverlay)
+
+Opcional. Si quieres que la Android TV te avise cuando cualquier cámara detecte a una persona:
+
+1. En la tele activa las opciones de desarrollador y la depuración ADB por red. En la mayoría es Ajustes, Acerca de, pulsa varias veces Compilación, y luego en Opciones de desarrollador enciende Depuración USB (y Depuración de red, si aparece).
+2. Instala la app **TvOverlay** desde la Play Store, ábrela y acepta el permiso de dibujar encima de otras apps. El API local queda en el puerto `5001`.
+3. En la PC instala platform-tools de Android para tener el comando `adb` en el PATH. Si lo dejas en otra carpeta, pon la ruta en `adb_path`.
+4. Edita `models/config.py`, clase `TvOverlayConfig`: pon `enabled = True` y la IP de la tele en `tv_ip`. El puerto ADB por defecto es `5555`. El cooldown (30 s por cámara) evita un aviso en cada frame.
+5. Prueba con `python scripts/test_tv_notify.py` o con el botón **Probar aviso TV** del panel de admin. El texto sale así: `Cámara 1 detectó a una persona` (o el nombre de la cámara, si le pusiste uno).
+
+El aviso sale por ADB (`adb connect` y de ahí el `POST /notify` de TvOverlay). Si ADB no responde, se intenta `http://IP_DE_LA_TELE:5001/notify`. Si falla, se anota en la consola y el video sigue igual.
 
 ---
 

@@ -606,6 +606,21 @@ class CameraManager:
             except Exception as e:
                 print(f"Error in detection callback: {e}")
 
+        self._notify_tv(camera_id)
+
+    def _notify_tv(self, camera_id: str) -> None:
+        """Encola un aviso a la tele. No espera a ADB ni tumba la detección."""
+        try:
+            with self.state_lock:
+                info = self.cameras.get(camera_id) or {}
+                name = info.get("name")
+                ids = list(self.cameras.keys())
+            number = ids.index(camera_id) + 1 if camera_id in ids else 1
+            from services.tv_notifier import tv_notifier
+            tv_notifier.notify_detection(camera_id, name=name, number=number)
+        except Exception as e:
+            print(f"Error notifying TV for {camera_id}: {e}")
+
 
 # Global camera manager instance
 camera_manager = CameraManager()

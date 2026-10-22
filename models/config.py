@@ -147,7 +147,7 @@ class UserConfig:
     
     # Default user credentials (should be moved to database in production)
     CREDENTIALS = {
-        "admin": "ad",
+        "admin": "admin",
         "1234": "1234",  # mama's credentials
     }
     
@@ -172,6 +172,24 @@ class UserConfig:
     def is_mama(cls, username: str) -> bool:
         """Check if user is mama"""
         return username == cls.MAMA_USERNAME
+
+
+class TvOverlayConfig:
+    """Aviso en la Android TV (app TvOverlay) cuando alguna cámara ve a una persona.
+
+    Para prenderlo cambia `enabled` a True y pon la IP de la tele en `tv_ip`.
+    El resto puede quedarse como está.
+    """
+
+    enabled = False
+    tv_ip = ""  # ejemplo: "192.168.1.80"
+    adb_port = 5555
+    adb_path = "adb"  # o r"C:\platform-tools\adb.exe" si no está en el PATH
+    title = "Alerta"  # título opcional. Déjalo vacío si no quieres título.
+    duration = 8  # segundos que el aviso se queda en pantalla
+    cooldown_seconds = 30  # por cámara, para no spamear cada frame
+    tvoverlay_port = 5001  # API local de TvOverlay, POST /notify
+    adb_local_port = 15001  # puerto en esta PC para el túnel `adb forward`
 
 
 # Global settings instance
